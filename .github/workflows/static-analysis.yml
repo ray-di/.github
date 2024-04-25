@@ -6,6 +6,12 @@ on:
       - '**.md'
   pull_request:
   workflow_dispatch:
+    inputs:
+      has_crc_config:
+        required: false
+        default: false
+        type: boolean
+        description: True if the project has composer_require_checker.json
   workflow_call:
     inputs:
       has_crc_config:

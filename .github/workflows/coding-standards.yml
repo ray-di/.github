@@ -7,10 +7,6 @@ on:
   pull_request:
   workflow_dispatch:
   workflow_call:
-    inputs:
-      php_version:
-        required: true
-        type: string
 
 jobs:
   coding-standards:
