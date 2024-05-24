@@ -102,9 +102,9 @@ jobs:
         run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run additional script
         if: ${{ inputs.script }}
