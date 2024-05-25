@@ -41,6 +41,9 @@ jobs:
           - php-version: ${{ inputs.current_stable }}
             os: ubuntu-latest
             experimental: false
+          - php-version: ${{ inputs.current_stable }}
+            os: ubuntu-lowest
+            experimental: false
     steps:
       - name: Checkout
         uses: actions/checkout@v3
