@@ -39,7 +39,7 @@ jobs:
             os: windows-latest
             experimental: false
           - php-version: ${{ inputs.current_stable }}
-            os: macos-latest
+            os: ubuntu-latest
             experimental: false
     steps:
       - name: Checkout
