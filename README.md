@@ -11,7 +11,7 @@ A reusable workflow for PHP projects that runs PHPUnit tests across multiple PHP
 #### Usage
 
 ```yaml
-name: CI
+name: Continuous Integration
 
 on:
   push:
