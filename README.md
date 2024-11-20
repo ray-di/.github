@@ -1,15 +1,17 @@
-# Ray.Di templates
+# Reusable GitHub Actions Workflows
 
-## Usage
+This repository contains reusable GitHub Actions workflows for PHP projects.
 
+## Workflows
 
-### coding-standards.yml
+### Continuous Integration (`continuous-integration.yml`)
 
-指定するPHPのバージョンを`php_version`で指定します。（他の設定ファイルでも同様）
-Specifies the PHP version to run.　(The same is applied to other configuration files.)
+A reusable workflow for PHP projects that runs PHPUnit tests across multiple PHP versions and dependency combinations.
+
+#### Usage
 
 ```yaml
-name: Coding Standards
+name: CI
 
 on:
   push:
@@ -17,76 +19,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  cs:
-    uses: ray-di/.github/.github/workflows/coding-standards.yml@v1
-    with:
-      php_version: 8.1
-```
-
-### continuous-integration.yml
-
-２つのバージョンがあります。通常の`v1`と時期バージョンのPHPをテストする`next_stable`です。
-
-There are two versions available. The regular `v1` version and the `next_stable` version, which tests the current version of PHP.
-
-#### v1
-
-```yaml
-name: Continuous Integration
-
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
-
-jobs:
-  ci:
+  tests:
     uses: ray-di/.github/.github/workflows/continuous-integration.yml@v1
     with:
-      old_stable: '["7.4", "8.0"]'
-      current_stable: 8.1
+      old_stable: '["8.1", "8.2", "8.3"]'
+      current_stable: "8.4"
 ```
 
-#### next_stable
+#### Inputs
 
-```yaml
-name: Continuous Integration
+| Name | Description | Required | Type |
+|------|-------------|----------|------|
+| `old_stable` | JSON array of PHP versions to test | Yes | string |
+| `current_stable` | Current stable PHP version | Yes | string |
+| `script` | Additional PHP script to run | No | string |
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
+#### Features
 
-jobs:
-  ci:
-    uses: ray-di/.github/.github/workflows/continuous-integration.yml@next_stable
-    with:
-      old_stable: '["7.4", "8.0"]'
-      current_stable: 8.1
-      next_stable: 8.2
-```
+- Runs tests on multiple PHP versions
+- Handles both highest and lowest dependencies
+- Includes code coverage reporting to Codecov
+- Caches Composer dependencies
+- Tests on both Ubuntu and Windows (for current stable PHP version)
+- Configurable additional script execution
 
-### static-analysis.yml
+#### Test Matrix
 
-[ComposerRequireChecker](https://github.com/maglnet/ComposerRequireChecker) のconfigファイル`composer-require-checker.json`があるときは`has_crc_config`をtrueにします。ない時はfalseにするか`has_crc_config`の指定そのものを取り除きます。
+The workflow runs tests with the following combinations:
 
-If the config file `composer-require-checker.json` for [ComposerRequireChecker](https://github.com/maglnet/ComposerRequireChecker) is present, set `has_ crc_config` to true. If not, set it to false or remove the `has_crcrc_config` specification itself.
-
-```yaml
-name: Static Analysis
-
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
-
-jobs:
-  sa:
-    uses: ray-di/.github/.github/workflows/static-analysis.yml@v1
-    with:
-      php_version: 8.1
-      has_crc_config: true
-```
+- All PHP versions from `old_stable` on Ubuntu with both highest and lowest dependencies
+- Current stable PHP version on:
+    - Ubuntu (highest dependencies)
+    - Ubuntu (lowest dependencies)
+    - Windows (highest dependencies)
 
 ## GH actions workflow templates
 
