@@ -1,12 +1,17 @@
+# GitHub Actions workflow specifically designed for running PHPUnit tests
+# This workflow is optimized to install only the necessary dependencies for PHPUnit
+# and explicitly avoids installing development tools to prevent latest PHP compatibility issues
+
 name: Continuous Integration
 
+# Workflow trigger configuration
 on:
   push:
     paths-ignore:
-      - '**.md'
+      - '**.md'  # Skip workflow on documentation changes only
   pull_request:
-  workflow_dispatch:
-  workflow_call:
+  workflow_dispatch:  # Enable manual trigger
+  workflow_call:     # Enable calling from other workflows
     inputs:
       old_stable:
         description: Old stable php version matrix
@@ -21,6 +26,10 @@ on:
         required: false
         type: string
 
+# Environment configuration
+# Key flags:
+# --no-plugins: Disables composer-bin-plugin to prevent vendor-bin installation
+# This avoids installing tools like psalm that might have compatibility issues with PHP 8.4
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --no-plugins"
   COMPOSER_UPDATE_FLAGS: ""
@@ -29,6 +38,10 @@ jobs:
   phpunit:
     name: PHPUnit
     runs-on: ubuntu-latest
+    # Test matrix configuration:
+    # - Tests against multiple PHP versions specified in old_stable
+    # - Tests both highest and lowest dependencies
+    # - Includes specific test for current stable PHP version on different OS
     strategy:
       matrix:
         php-version: ${{ fromJson(inputs.old_stable) }}
@@ -45,18 +58,21 @@ jobs:
             os: ubuntu-lowest
             experimental: false
     steps:
+      # Fetch repository content
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history for accurate testing
 
+      # Configure PHP environment
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          coverage: pcov
-          ini-values: zend.assertions=1
+          coverage: pcov  # Use pcov for code coverage
+          ini-values: zend.assertions=1  # Enable assertions for testing
 
+      # Setup Composer cache for faster dependency installation
       - name: Get composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
@@ -68,6 +84,7 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      # Configure dependency installation based on test matrix
       - name: Handle lowest dependencies update
         if: contains(matrix.dependencies, 'lowest')
         run: echo COMPOSER_UPDATE_FLAGS=$COMPOSER_UPDATE_FLAGS --prefer-lowest >> $GITHUB_ENV
@@ -76,25 +93,31 @@ jobs:
         if: contains(matrix.dependencies, 'ignore')
         run: echo COMPOSER_FLAGS=$COMPOSER_FLAGS --ignore-platform-req=php >> $GITHUB_ENV
 
+      # Remove platform config to ensure correct dependency resolution
       - name: Remove platform config to get latest dependencies for current PHP version
         if: contains(matrix.dependencies, 'highest') || contains(matrix.dependencies, 'lowest')
         run: composer config platform --unset
 
+      # Allow testing with alpha versions for early problem detection
       - name: Allow alpha releases for latest-deps builds to catch problems earlier
         if: contains(matrix.dependencies, 'ignore')
         run: composer config minimum-stability alpha
 
+      # Install dependencies using configured flags
       - name: Update dependencies
         run: composer update ${{ env.COMPOSER_UPDATE_FLAGS }} ${{ env.COMPOSER_FLAGS }}
 
+      # Run PHPUnit tests and generate coverage report
       - name: Run test suite
         run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
 
+      # Upload coverage data to Codecov
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      # Execute additional custom scripts if provided
       - name: Run additional script
         if: ${{ inputs.script }}
         run: php ${{ inputs.script }}
