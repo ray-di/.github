@@ -4,7 +4,6 @@
 
 name: Continuous Integration
 
-# Workflow trigger configuration
 on:
   push:
     paths-ignore:
@@ -37,26 +36,32 @@ env:
 jobs:
   phpunit:
     name: PHPUnit
-    runs-on: ubuntu-latest
-    # Test matrix configuration:
-    # - Tests against multiple PHP versions specified in old_stable
-    # - Tests both highest and lowest dependencies
-    # - Includes specific test for current stable PHP version on different OS
+    runs-on: ${{ matrix.os }}
     strategy:
+      # Don't cancel other matrix jobs if one fails
+      fail-fast: false
       matrix:
         php-version: ${{ fromJson(inputs.old_stable) }}
         dependencies: [highest, lowest]
         os: [ubuntu-latest]
+        experimental: [false]
         include:
           - php-version: ${{ inputs.current_stable }}
             os: windows-latest
+            dependencies: highest
             experimental: false
           - php-version: ${{ inputs.current_stable }}
             os: ubuntu-latest
+            dependencies: highest
             experimental: false
+          # Test current stable with lowest dependencies
           - php-version: ${{ inputs.current_stable }}
-            os: ubuntu-lowest
+            os: ubuntu-latest
+            dependencies: lowest
             experimental: false
+
+    continue-on-error: ${{ matrix.experimental }}
+
     steps:
       # Fetch repository content
       - name: Checkout
@@ -70,54 +75,65 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           coverage: pcov  # Use pcov for code coverage
-          ini-values: zend.assertions=1  # Enable assertions for testing
+          ini-values: zend.assertions=1, memory_limit=512M  # Enable assertions and increase memory limit
+          tools: none    # Don't install additional tools
 
       # Setup Composer cache for faster dependency installation
       - name: Get composer cache directory
         id: composer-cache
+        shell: bash
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
+          key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.json', '**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php${{ matrix.php-version }}-composer-
+            ${{ runner.os }}-composer-
+
+      # Ensure platform requirements are properly set
+      - name: Set platform requirements
+        shell: bash
+        run: |
+          composer config platform.php ${{ matrix.php-version }}
 
       # Configure dependency installation based on test matrix
       - name: Handle lowest dependencies update
-        if: contains(matrix.dependencies, 'lowest')
-        run: echo COMPOSER_UPDATE_FLAGS=$COMPOSER_UPDATE_FLAGS --prefer-lowest >> $GITHUB_ENV
+        if: matrix.dependencies == 'lowest'
+        shell: bash
+        run: echo COMPOSER_UPDATE_FLAGS="$COMPOSER_UPDATE_FLAGS --prefer-lowest" >> $GITHUB_ENV
 
-      - name: Handle ignore-platform-reqs dependencies update
-        if: contains(matrix.dependencies, 'ignore')
-        run: echo COMPOSER_FLAGS=$COMPOSER_FLAGS --ignore-platform-req=php >> $GITHUB_ENV
-
-      # Remove platform config to ensure correct dependency resolution
-      - name: Remove platform config to get latest dependencies for current PHP version
-        if: contains(matrix.dependencies, 'highest') || contains(matrix.dependencies, 'lowest')
+      - name: Remove platform config for dependency resolution
+        if: matrix.dependencies == 'highest'
+        shell: bash
         run: composer config platform --unset
-
-      # Allow testing with alpha versions for early problem detection
-      - name: Allow alpha releases for latest-deps builds to catch problems earlier
-        if: contains(matrix.dependencies, 'ignore')
-        run: composer config minimum-stability alpha
 
       # Install dependencies using configured flags
       - name: Update dependencies
-        run: composer update ${{ env.COMPOSER_UPDATE_FLAGS }} ${{ env.COMPOSER_FLAGS }}
+        shell: bash
+        run: |
+          # Validate composer.json before proceeding
+          composer validate --no-check-all --strict
+          composer update ${{ env.COMPOSER_UPDATE_FLAGS }} ${{ env.COMPOSER_FLAGS }}
 
       # Run PHPUnit tests and generate coverage report
       - name: Run test suite
-        run: ./vendor/bin/phpunit --coverage-clover=coverage.xml
+        shell: bash
+        run: vendor/bin/phpunit --coverage-clover=coverage.xml
+        env:
+          XDEBUG_MODE: coverage
 
       # Upload coverage data to Codecov
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false  # Don't fail if coverage upload fails
 
       # Execute additional custom scripts if provided
       - name: Run additional script
-        if: ${{ inputs.script }}
+        if: inputs.script != ''
+        shell: bash
         run: php ${{ inputs.script }}
