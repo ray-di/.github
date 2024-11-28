@@ -76,6 +76,7 @@ jobs:
           php-version: ${{ matrix.php-version }}
           coverage: pcov  # Use pcov for code coverage
           ini-values: zend.assertions=1, memory_limit=512M  # Enable assertions and increase memory limit
+          extensions: pdo, pdo_mysql, pdo_sqlite  # Install additional extensions
           tools: none    # Don't install additional tools
 
       # Setup Composer cache for faster dependency installation
