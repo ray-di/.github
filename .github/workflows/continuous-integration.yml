@@ -75,9 +75,15 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           coverage: pcov
-          ini-values: zend.assertions=1, opcache.jit_buffer_size=0, opcache.jit=0
-          extensions: pdo, pdo_mysql, pdo_sqlite  # Install additional extensions
-          tools: none    # Don't install additional tools
+        ini-values: >
+          zend.assertions=1
+          memory_limit=512M
+          opcache.jit=0
+          opcache.jit_buffer_size=0
+          opcache.enable=0
+          opcache.enable_cli=0
+        extensions: pdo, pdo_mysql, pdo_sqlite  # Install additional extensions
+        tools: none    # Don't install additional tools
 
       # Setup Composer cache for faster dependency installation
       - name: Get composer cache directory
