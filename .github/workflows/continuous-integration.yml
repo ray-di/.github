@@ -75,7 +75,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           coverage: pcov
-        ini-values: >
+        ini-values: |
           zend.assertions=1
           memory_limit=512M
           opcache.jit=0
