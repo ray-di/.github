@@ -63,6 +63,10 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
 
     steps:
+      - name: Disable autocrlf on Windows
+        if: contains(matrix.os, 'windows')
+        run: git config --global core.autocrlf false
+
       # Fetch repository content
       - name: Checkout
         uses: actions/checkout@v4
