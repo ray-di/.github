@@ -47,7 +47,4 @@ jobs:
         run: composer validate --strict
 
       - name: Run PHP_CodeSniffer
-        run: |
-  composer install
-  vendor/bin/phpunit
-  vendor/bin/phpstan analyse
+        run: ./vendor/bin/phpcs -q --no-colors --report=checkstyle src tests | cs2pr
