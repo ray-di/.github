@@ -13,22 +13,15 @@ on:
   workflow_call:     # Enable calling from other workflows
     inputs:
       old_stable:
-        description: Old stable php version matrix
         required: true
         type: string
       current_stable:
-        description: Current stable php version
         required: true
         type: string
       script:
-        description: Additional scripts to run
         required: false
         type: string
 
-# Environment configuration
-# Key flags:
-# --no-plugins: Disables composer-bin-plugin to prevent vendor-bin installation
-# This avoids installing tools like psalm that might have compatibility issues with PHP 8.4
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --no-plugins"
   COMPOSER_UPDATE_FLAGS: ""
@@ -38,7 +31,6 @@ jobs:
     name: PHPUnit
     runs-on: ${{ matrix.os }}
     strategy:
-      # Don't cancel other matrix jobs if one fails
       fail-fast: false
       matrix:
         php-version: ${{ fromJson(inputs.old_stable) }}
@@ -54,7 +46,6 @@ jobs:
             os: ubuntu-latest
             dependencies: highest
             experimental: false
-          # Test current stable with lowest dependencies
           - php-version: ${{ inputs.current_stable }}
             os: ubuntu-latest
             dependencies: lowest
@@ -67,13 +58,11 @@ jobs:
         if: contains(matrix.os, 'windows')
         run: git config --global core.autocrlf false
 
-      # Fetch repository content
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for accurate testing
+          fetch-depth: 0
 
-      # Configure PHP environment
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
@@ -86,10 +75,12 @@ jobs:
             opcache.jit_buffer_size=0
             opcache.enable=0
             opcache.enable_cli=0
+            ${{ matrix.os == 'windows-latest' && 'extension=php_pdo_mysql.dll' || '' }}
+            ${{ matrix.os == 'windows-latest' && 'extension=php_pdo_sqlite.dll' || '' }}
           extensions: |
             pdo
-            pdo_mysql
-            pdo_sqlite
+            ${{ matrix.os == 'windows-latest' && 'mysql' || 'pdo_mysql' }}
+            ${{ matrix.os == 'windows-latest' && 'sqlite' || 'pdo_sqlite' }}
 
       # Setup Composer cache for faster dependency installation
       - name: Get composer cache directory
