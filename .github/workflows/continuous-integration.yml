@@ -10,11 +10,12 @@ on:
       - '**.md'  # Skip workflow on documentation changes only
   pull_request:
   workflow_dispatch:  # Enable manual trigger
-  workflow_call:     # Enable calling from other workflows
+  workflow_call:      # Enable calling from other workflows
     inputs:
       old_stable:
-        required: true
+        required: false
         type: string
+        default: "[]"
       current_stable:
         required: true
         type: string
