@@ -130,12 +130,16 @@ jobs:
       - name: Install dependencies
         run: |
           composer install --no-interaction --no-progress --prefer-dist
-          composer require maglnet/composer-require-checker --dev --with-all-dependencies
+
+      - name: Download ComposerRequireChecker PHAR
+        run: |
+          curl -L https://github.com/maglnet/ComposerRequireChecker/releases/latest/download/composer-require-checker.phar -o composer-require-checker.phar
+          chmod +x composer-require-checker.phar
 
       - name: Run composer-require-checker without config
         if: ${{ !inputs.has_crc_config }}
-        run: ./vendor/bin/composer-require-checker check ./composer.json
+        run: ./composer-require-checker.phar check ./composer.json
 
       - name: Run composer-require-checker with config
         if: ${{ inputs.has_crc_config }}
-        run: ./vendor/bin/composer-require-checker check ./composer.json --config-file=./composer-require-checker.json
+        run: ./composer-require-checker.phar check ./composer.json --config-file=./composer-require-checker.json
