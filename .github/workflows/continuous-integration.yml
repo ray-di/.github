@@ -28,34 +28,72 @@ env:
   COMPOSER_UPDATE_FLAGS: ""
 
 jobs:
+  # Generate matrix dynamically based on inputs
+  matrix-generator:
+    name: Generate Test Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - name: Generate matrix
+        id: generate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const oldStable = ${{ inputs.old_stable }};
+            const currentStable = "${{ inputs.current_stable }}";
+            
+            let matrix = {
+              include: []
+            };
+            
+            // Add old stable versions if provided
+            if (oldStable.length > 0) {
+              for (const version of oldStable) {
+                matrix.include.push({
+                  "php-version": version,
+                  "os": "ubuntu-latest",
+                  "dependencies": "highest",
+                  "experimental": false
+                });
+                matrix.include.push({
+                  "php-version": version,
+                  "os": "ubuntu-latest",
+                  "dependencies": "lowest",
+                  "experimental": false
+                });
+              }
+            }
+            
+            // Always add current stable tests
+            matrix.include.push({
+              "php-version": currentStable,
+              "os": "windows-latest",
+              "dependencies": "highest",
+              "experimental": false
+            });
+            matrix.include.push({
+              "php-version": currentStable,
+              "os": "ubuntu-latest",
+              "dependencies": "highest",
+              "experimental": false
+            });
+            matrix.include.push({
+              "php-version": currentStable,
+              "os": "ubuntu-latest",
+              "dependencies": "lowest",
+              "experimental": false
+            });
+            
+            core.setOutput('matrix', JSON.stringify(matrix));
+
   phpunit:
-    name: PHPUnit
+    name: PHPUnit - PHP ${{ matrix.php-version }} (${{ matrix.os }}, ${{ matrix.dependencies }})
+    needs: matrix-generator
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix:
-        # Only include old_stable versions if they are provided
-        php-version: ${{ fromJson(inputs.old_stable || '[]') }}
-        dependencies: [highest, lowest]
-        os: [ubuntu-latest]
-        experimental: [false]
-        # Exclude combinations when old_stable is empty
-        exclude:
-          - php-version: null
-        include:
-          # Always include current_stable tests
-          - php-version: ${{ inputs.current_stable }}
-            os: windows-latest
-            dependencies: highest
-            experimental: false
-          - php-version: ${{ inputs.current_stable }}
-            os: ubuntu-latest
-            dependencies: highest
-            experimental: false
-          - php-version: ${{ inputs.current_stable }}
-            os: ubuntu-latest
-            dependencies: lowest
-            experimental: false
+      matrix: ${{ fromJson(needs.matrix-generator.outputs.matrix) }}
 
     continue-on-error: ${{ matrix.experimental }}
 
