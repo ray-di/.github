@@ -34,11 +34,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-version: ${{ fromJson(inputs.old_stable) }}
+        # Only include old_stable versions if they are provided
+        php-version: ${{ fromJson(inputs.old_stable || '[]') }}
         dependencies: [highest, lowest]
         os: [ubuntu-latest]
         experimental: [false]
+        # Exclude combinations when old_stable is empty
+        exclude:
+          - php-version: null
         include:
+          # Always include current_stable tests
           - php-version: ${{ inputs.current_stable }}
             os: windows-latest
             dependencies: highest
