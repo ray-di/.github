@@ -93,7 +93,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.matrix-generator.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.matrix-generator.outputs.matrix) }}-extra-cache-key
 
     continue-on-error: ${{ matrix.experimental }}
 
