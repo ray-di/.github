@@ -121,6 +121,9 @@ jobs:
             opcache.enable_cli=0
           extensions: fileinfo,pdo,pdo_mysql,pdo_sqlite
 
+      - name: Check fileinfo extension
+        run: php --ri fileinfo
+
       # Setup Composer cache for faster dependency installation
       - name: Get composer cache directory
         id: composer-cache
