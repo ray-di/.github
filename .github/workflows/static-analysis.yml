@@ -123,8 +123,8 @@ jobs:
           composer install --no-interaction --no-progress --prefer-dist
 
       - name: Install ComposerRequireChecker
-        # Every release caps the PHP minor it supports. On a newer PHP composer silently falls back to
-        # 4.4.0 (nikic/php-parser 4), so install the latest release and ignore its PHP constraint instead.
+        # Every release caps the PHP minor it supports; on PHP 8.6+ composer would silently resolve
+        # 4.4.0 (nikic/php-parser 4), so the latest release is installed with the php constraint ignored.
         run: |
           if php -r 'exit(PHP_VERSION_ID >= 80600 ? 0 : 1);'; then
             composer global require maglnet/composer-require-checker --ignore-platform-req=php
