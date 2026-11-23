@@ -4,13 +4,9 @@
 
 name: Continuous Integration
 
+# Reusable only: running on this repository's own push/pull_request would start with empty inputs.
 on:
-  push:
-    paths-ignore:
-      - '**.md'  # Skip workflow on documentation changes only
-  pull_request:
-  workflow_dispatch:  # Enable manual trigger
-  workflow_call:      # Enable calling from other workflows
+  workflow_call:
     inputs:
       old_stable:
         required: false
@@ -22,6 +18,9 @@ on:
       script:
         required: false
         type: string
+
+permissions:
+  contents: read
 
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --no-plugins"
@@ -37,11 +36,14 @@ jobs:
     steps:
       - name: Generate matrix
         id: generate
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
+        env:
+          OLD_STABLE: ${{ inputs.old_stable }}
+          CURRENT_STABLE: ${{ inputs.current_stable }}
         with:
           script: |
-            const oldStable = ${{ inputs.old_stable }};
-            const currentStable = "${{ inputs.current_stable }}";
+            const oldStable = JSON.parse(process.env.OLD_STABLE || '[]');
+            const currentStable = process.env.CURRENT_STABLE;
             
             let matrix = {
               include: []
@@ -103,7 +105,7 @@ jobs:
         run: git config --global core.autocrlf false
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -131,7 +133,7 @@ jobs:
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.json', '**/composer.lock') }}
@@ -173,7 +175,7 @@ jobs:
 
       # Upload coverage data to Codecov
       - name: Upload coverage report
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false  # Don't fail if coverage upload fails
