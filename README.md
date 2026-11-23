@@ -80,7 +80,7 @@ The project's own `require-dev` tools are used:
 
 - PHPStan: `./vendor/bin/phpstan analyse -c phpstan.neon`
 - Psalm: `./vendor/bin/psalm --show-info=false --shepherd`
-- PHPMD: `./vendor/bin/phpmd src text ./phpmd.xml` (the old positional argument form; the project needs a `phpmd.xml`)
+- PHPMD: `./vendor/bin/phpmd src text ./phpmd.xml` (the old positional form, which PHPMD 3 still runs but reports as deprecated; the project needs a `phpmd.xml`)
 - ComposerRequireChecker: installed with `composer global require maglnet/composer-require-checker`, then `composer-require-checker check ./composer.json`
 
 `static-analysis-no-phpmd.yml` takes the same inputs, skips the PHPMD job and runs ComposerRequireChecker from the latest release PHAR.
