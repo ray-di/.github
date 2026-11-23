@@ -38,7 +38,7 @@ jobs:
 
 - Runs tests on multiple PHP versions
 - Handles both highest and lowest dependencies
-- Uploads coverage to Codecov with `secrets.CODECOV_TOKEN` (pass `secrets: inherit` to provide it); a failed upload does not fail the job
+- Uploads coverage to Codecov; `secrets.CODECOV_TOKEN` is used only when the caller passes `secrets: inherit` (or `CODECOV_TOKEN`), otherwise the upload is tokenless. A failed upload does not fail the job
 - Caches Composer dependencies
 - Tests on both Ubuntu and Windows (for current stable PHP version)
 - Configurable additional script execution
