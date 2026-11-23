@@ -33,6 +33,7 @@ jobs:
 | `old_stable` | JSON array of PHP versions to test | Yes | string |
 | `current_stable` | Current stable PHP version | Yes | string |
 | `script` | Additional PHP script to run | No | string |
+| `composer_no_scripts` | Pass `--no-scripts` to `composer update` so root scripts (for example vendor-bin tool installs) do not run in the test jobs. Defaults to `false`. | No | boolean |
 
 #### Features
 

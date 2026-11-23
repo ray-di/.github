@@ -22,6 +22,11 @@ on:
       script:
         required: false
         type: string
+      composer_no_scripts:
+        description: Pass --no-scripts to composer update, so root scripts (for example vendor-bin tool installs) do not run in the test jobs
+        required: false
+        type: boolean
+        default: false
 
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --no-plugins"
@@ -150,6 +155,11 @@ jobs:
         if: matrix.dependencies == 'lowest'
         shell: bash
         run: echo COMPOSER_UPDATE_FLAGS="$COMPOSER_UPDATE_FLAGS --prefer-lowest" >> $GITHUB_ENV
+
+      - name: Skip root composer scripts
+        if: inputs.composer_no_scripts
+        shell: bash
+        run: echo COMPOSER_UPDATE_FLAGS="$COMPOSER_UPDATE_FLAGS --no-scripts" >> $GITHUB_ENV
 
       - name: Remove platform config for dependency resolution
         if: matrix.dependencies == 'highest'
